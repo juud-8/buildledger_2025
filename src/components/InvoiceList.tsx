@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
 import { FileText, Plus, Search, Edit, Trash2, Eye, Download, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, User, Database, Copy, Printer, Archive } from 'lucide-react';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice, generateNextNumber } from '../utils/storage';
+import {
+  getInvoices,
+  deleteInvoice,
+  updateInvoiceStatus,
+  convertQuoteToInvoice,
+  updateExpiredQuotes,
+  saveInvoice
+} from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+import { useInvoices, useUpdateInvoice } from '../hooks/useInvoices';
+
 import { formatDate, formatCurrency } from '../utils/calculations';
 import DataManagement from './DataManagement';
+import AddPaymentModal from './AddPaymentModal';
 
 interface InvoiceListProps {
   onEditInvoice: (invoice: Invoice) => void;
@@ -11,7 +23,8 @@ interface InvoiceListProps {
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew }) => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const { data: invoices = [], refetch } = useInvoices();
+  const updateMutation = useUpdateInvoice();
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'invoice' | 'quote'>('all');
@@ -19,20 +32,18 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [convertingQuote, setConvertingQuote] = useState<string | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
+const toast = useToast();
+const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+const [paymentModalInvoice, setPaymentModalInvoice] = useState<Invoice | null>(null);
 
-  useEffect(() => {
-    loadInvoices();
-  }, []);
+useEffect(() => {
+  loadInvoices();
+}, []);
+
 
   useEffect(() => {
     filterInvoices();
   }, [invoices, searchTerm, filterType, filterStatus]);
-
-  const loadInvoices = () => {
-    updateExpiredQuotes(); // Update expired quotes before loading
-    const loadedInvoices = getInvoices().sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    setInvoices(loadedInvoices);
-  };
 
   const filterInvoices = () => {
     let filtered = invoices;
@@ -61,13 +72,15 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
 
   const handleDeleteInvoice = (invoiceId: string) => {
     deleteInvoice(invoiceId);
-    loadInvoices();
+    refetch();
     setDeleteConfirm(null);
   };
 
   const handleStatusChange = (invoiceId: string, status: Invoice['status']) => {
-    updateInvoiceStatus(invoiceId, status);
-    loadInvoices();
+    const inv = invoices.find(i => i.id === invoiceId);
+    if (inv) {
+      updateMutation.mutate({ ...inv, status });
+    }
   };
 
   const handleConvertQuote = async (quoteId: string) => {
@@ -75,11 +88,15 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     try {
       const newInvoice = convertQuoteToInvoice(quoteId);
       if (newInvoice) {
-        loadInvoices();
-        alert('Quote converted to invoice successfully!');
+refetch(); // Supabase-triggered refresh (use if using React Query)
+toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
+
       }
     } catch (error) {
-      alert('Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     } finally {
       setConvertingQuote(null);
     }
@@ -89,7 +106,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     const duplicated: Invoice = {
       ...originalInvoice,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      number: generateNextNumber(originalInvoice.type),
+      number:
+        originalInvoice.type === 'invoice'
+          ? getNextInvoiceNumber(getInvoices())
+          : getNextQuoteNumber(getInvoices()),
       date: new Date(),
       status: 'draft',
       createdAt: new Date(),
@@ -99,8 +119,12 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     };
 
     saveInvoice(duplicated);
-    loadInvoices();
-    alert(`${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`);
+refetch();
+toast({
+  message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
+  variant: 'success'
+});
+
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {
@@ -297,6 +321,14 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
            invoice.status !== 'converted' && 
            invoice.status !== 'rejected' &&
            !isQuoteExpired(invoice);
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedInvoice(prev => (prev === id ? null : id));
+  };
+
+  const handlePaymentAdded = () => {
+    loadInvoices();
   };
 
   const statusOptions: Invoice['status'][] = [
@@ -508,6 +540,16 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
                       >
                         <Printer className="h-4 w-4" />
                       </button>
+
+                      {invoice.balanceDue > 0 && (
+                        <button
+                          onClick={() => setPaymentModalInvoice(invoice)}
+                          className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Add Payment"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </button>
+                      )}
                       
                       {canConvertQuote(invoice) && (
                         <button
@@ -549,15 +591,50 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
                       <span className="text-green-600">Converted to Invoice</span>
                     )}
                   </div>
-                  <div className="text-xs">
-                    {invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}
-                  </div>
+                <div className="text-xs">
+                  {invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}
                 </div>
               </div>
+
+              {expandedInvoice === invoice.id && (
+                <div className="mt-4 bg-gray-50 border rounded-lg p-4 text-sm space-y-2">
+                  <h4 className="font-medium">Payment History</h4>
+                  {invoice.payments.length === 0 ? (
+                    <p className="text-gray-600">No payments recorded</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {invoice.payments.map(p => (
+                        <li key={p.id} className="flex justify-between">
+                          <span>{formatDate(p.date)}</span>
+                          <span>{formatCurrency(p.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {invoice.balanceDue > 0 && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setPaymentModalInvoice(invoice)}
+                        className="mt-2 px-3 py-1 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                      >
+                        Add Payment
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => toggleExpand(invoice.id)}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                {expandedInvoice === invoice.id ? 'Hide Details' : 'View Details'}
+              </button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
@@ -593,6 +670,15 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
             </div>
           </div>
         </div>
+      )}
+
+      {paymentModalInvoice && (
+        <AddPaymentModal
+          invoice={paymentModalInvoice}
+          isOpen={true}
+          onClose={() => setPaymentModalInvoice(null)}
+          onPaymentAdded={handlePaymentAdded}
+        />
       )}
 
       {/* Data Management Modal */}

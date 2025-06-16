@@ -1,4 +1,5 @@
 import { Client, Invoice, ContractorInfo, TemplateSettings } from '../types';
+import { getNextInvoiceNumber } from './identifier';
 
 const STORAGE_KEYS = {
   CLIENTS: 'buildledger_clients',
@@ -122,7 +123,7 @@ export const convertQuoteToInvoice = (quoteId: string): Invoice | null => {
   }
 
   // Create new invoice from quote
-  const invoiceNumber = generateNextNumber('invoice');
+  const invoiceNumber = getNextInvoiceNumber(getInvoices());
   const currentDate = new Date();
   const dueDate = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
@@ -237,18 +238,6 @@ export const getDefaultTemplateSettings = (): TemplateSettings => {
 };
 
 // Generate next invoice/quote number
-export const generateNextNumber = (type: 'invoice' | 'quote'): string => {
-  const invoices = getInvoices();
-  const filtered = invoices.filter(i => i.type === type);
-  const numbers = filtered
-    .map(i => parseInt(i.number.replace(/\D/g, ''), 10))
-    .filter(n => !isNaN(n));
-  
-  const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
-  const prefix = type === 'invoice' ? 'INV' : 'QUO';
-  
-  return `${prefix}-${nextNumber.toString().padStart(4, '0')}`;
-};
 
 // Generate unique ID
 const generateUniqueId = (): string => {

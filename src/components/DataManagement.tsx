@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from './ui/Toast';
 import { Download, Upload, Copy, Archive, Search, Filter, Printer, FileText, Database, RefreshCw, Trash2, Calendar, DollarSign, User, Building2 } from 'lucide-react';
 import { Invoice, Client, ContractorInfo } from '../types';
 import {
@@ -13,6 +14,8 @@ import {
 } from '../utils/storage';
 import { buildExportBlob } from '../utils/exporter';
 import { importFromBlob } from '../utils/importer';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+
 import { formatCurrency, formatDate } from '../utils/calculations';
 
 interface DataManagementProps {
@@ -30,6 +33,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
   const [searchResults, setSearchResults] = useState<Invoice[]>([]);
   const [archivedItems, setArchivedItems] = useState<Invoice[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const toast = useToast();
 
   // Export functionality
   const downloadBlob = (blob: Blob, filename: string) => {
@@ -86,18 +90,20 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const confirmImport = window.confirm(
-      'Importing data will merge with existing records. Continue?'
-    );
-    if (!confirmImport) return;
+const confirmImport = window.confirm(
+  'Importing data will merge with existing records. Continue?'
+);
+if (!confirmImport) return;
 
-    const success = await importFromBlob(file);
-    if (success) {
-      alert('Data imported successfully!');
-      window.location.reload();
-    } else {
-      alert('Error importing data. Please check the file format.');
-    }
+const success = await importFromBlob(file);
+
+if (success) {
+  toast({ message: 'Data imported successfully!', variant: 'success' });
+  window.location.reload();
+} else {
+  toast({ message: 'Error importing data. Please check the file format.', variant: 'error' });
+}
+
   };
 
   // Duplicate invoice/quote
@@ -105,7 +111,10 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     const duplicated: Invoice = {
       ...originalInvoice,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      number: generateNextNumber(originalInvoice.type),
+      number:
+        originalInvoice.type === 'invoice'
+          ? getNextInvoiceNumber(getInvoices())
+          : getNextQuoteNumber(getInvoices()),
       date: new Date(),
       status: 'draft',
       createdAt: new Date(),
@@ -115,35 +124,26 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     };
 
     saveInvoice(duplicated);
-    alert(`${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`);
+    toast({
+      message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
+      variant: 'success'
+    });
   };
 
-  const generateNextNumber = (type: 'invoice' | 'quote'): string => {
-    const invoices = getInvoices();
-    const filtered = invoices.filter(i => i.type === type);
-    const numbers = filtered
-      .map(i => parseInt(i.number.replace(/\D/g, ''), 10))
-      .filter(n => !isNaN(n));
-    
-    const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
-    const prefix = type === 'invoice' ? 'INV' : 'QUO';
-    
-    return `${prefix}-${nextNumber.toString().padStart(4, '0')}`;
-  };
 
   // Archive functionality
   const archiveInvoice = (invoice: Invoice) => {
     const archived = { ...invoice, status: 'archived' as const };
     saveInvoice(archived);
     setArchivedItems(prev => [...prev, archived]);
-    alert('Invoice archived successfully!');
+    toast({ message: 'Invoice archived successfully!', variant: 'success' });
   };
 
   const restoreInvoice = (invoice: Invoice) => {
     const restored = { ...invoice, status: 'draft' as const };
     saveInvoice(restored);
     setArchivedItems(prev => prev.filter(item => item.id !== invoice.id));
-    alert('Invoice restored successfully!');
+    toast({ message: 'Invoice restored successfully!', variant: 'success' });
   };
 
   // Advanced search
