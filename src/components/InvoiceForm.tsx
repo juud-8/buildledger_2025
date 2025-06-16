@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToast } from './ui/Toast';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
-import { getClients, getContractorInfo, generateNextNumber, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings } from '../utils/storage';
-import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency } from '../utils/calculations';
+import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency, getCategoryTotals } from '../utils/calculations';
+
 import { v4 as uuidv4 } from 'uuid';
 import LineItemsForm from './LineItemsForm';
 import ClientForm from './ClientForm';
@@ -38,20 +41,22 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
   const [isConverting, setIsConverting] = useState(false);
-  const {
-    register,
-    setValue,
-    trigger,
-    setFocus,
-    formState: { errors }
-  } = useForm<InvoiceSchema>({
-    resolver: zodResolver(invoiceSchema),
-    defaultValues: {
-      clientId: '',
-      projectTitle: '',
-      lineItems: []
-    }
-  });
+const {
+  register,
+  setValue,
+  trigger,
+  setFocus,
+  formState: { errors }
+} = useForm<InvoiceSchema>({
+  resolver: zodResolver(invoiceSchema),
+  defaultValues: {
+    clientId: '',
+    projectTitle: '',
+    lineItems: []
+  }
+});
+
+const toast = useToast();
   const [formData, setFormData] = useState<InvoiceFormData>({
     type: 'invoice',
     number: '',
@@ -127,7 +132,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     } else {
       setFormData(prev => ({
         ...prev,
-        number: generateNextNumber(prev.type)
+        number:
+          prev.type === 'invoice'
+            ? getNextInvoiceNumber(getInvoices())
+            : getNextQuoteNumber(getInvoices())
       }));
     }
   }, [editingInvoice]);
@@ -176,7 +184,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setFormData(prev => ({
         ...prev,
         type,
-        number: generateNextNumber(type)
+        number:
+          type === 'invoice'
+            ? getNextInvoiceNumber(getInvoices())
+            : getNextQuoteNumber(getInvoices())
       }));
     }
   };
@@ -249,7 +260,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   };
 
   const calculateTotals = () => {
-    const subtotal = calculateSubtotal(formData.lineItems);
+    const { material, labor, equipment, other } = getCategoryTotals(formData.lineItems);
+    const subtotal = material + labor + equipment + other;
     const taxBreakdown = calculateTaxBreakdown(
       formData.lineItems,
       formData.materialTaxRate,
@@ -261,16 +273,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     const total = subtotal + taxBreakdown.totalTax - discountAmount;
     const balanceDue = calculateBalanceDue(total, []);
     
-    return { 
-      subtotal, 
-      taxBreakdown, 
-      discountAmount, 
-      total, 
+    return {
+      subtotal,
+      taxBreakdown,
+      discountAmount,
+      total,
       balanceDue,
-      materialSubtotal: taxBreakdown.materialTax > 0 ? subtotal * 0.5 : 0, // Simplified calculation
-      laborSubtotal: taxBreakdown.laborTax > 0 ? subtotal * 0.3 : 0,
-      equipmentSubtotal: taxBreakdown.equipmentTax > 0 ? subtotal * 0.15 : 0,
-      otherSubtotal: taxBreakdown.otherTax > 0 ? subtotal * 0.05 : 0
+      materialSubtotal: material,
+      laborSubtotal: labor,
+      equipmentSubtotal: equipment,
+      otherSubtotal: other
     };
   };
 
@@ -334,13 +346,35 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     };
   };
 
-  const handleSave = async () => {
-    const valid = await trigger();
-    if (!valid) {
-      const firstError = Object.keys(errors)[0] as keyof InvoiceSchema;
-      if (firstError) setFocus(firstError);
-      return;
+const handleSave = async () => {
+  const valid = await trigger();
+  if (!valid) {
+    const firstError = Object.keys(errors)[0] as keyof InvoiceSchema;
+    if (firstError) {
+      setFocus(firstError);
+      toast({
+        message: `Please correct the field: ${firstError}`,
+        variant: 'error'
+      });
     }
+    return;
+  }
+
+  const selectedClient = getSelectedClient();
+  if (!selectedClient) {
+    toast({ message: 'Please select a client', variant: 'error' });
+    return;
+  }
+
+  if (!formData.projectTitle.trim()) {
+    toast({ message: 'Please enter a project title', variant: 'error' });
+    return;
+  }
+
+  if (formData.lineItems.length === 0) {
+    toast({ message: 'Please add at least one line item', variant: 'error' });
+    return;
+  }
 
     try {
       const invoice = createInvoiceObject();
@@ -348,7 +382,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       
       const action = editingInvoice ? 'updated' : 'saved';
-      alert(`${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`);
+      toast({
+        message: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`,
+        variant: 'success'
+      });
       
       if (onInvoiceUpdated) {
         onInvoiceUpdated();
@@ -358,7 +395,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       if (!editingInvoice) {
         setFormData(prev => ({
           ...prev,
-          number: generateNextNumber(formData.type),
+          number:
+            formData.type === 'invoice'
+              ? getNextInvoiceNumber(getInvoices())
+              : getNextQuoteNumber(getInvoices()),
           clientId: '',
           projectTitle: '',
           projectDescription: '',
@@ -370,7 +410,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
         }));
       }
     } catch (error) {
-      alert('Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 
@@ -383,13 +426,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     try {
       const newInvoice = convertQuoteToInvoice(editingInvoice.id);
       if (newInvoice && onInvoiceUpdated) {
-        alert('Quote converted to invoice successfully!');
+        toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
         onInvoiceUpdated();
         // Load the new invoice for editing
         loadInvoiceForEditing(newInvoice);
       }
     } catch (error) {
-      alert('Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     } finally {
       setIsConverting(false);
     }
@@ -398,17 +444,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const handleExportPDF = () => {
     const selectedClient = getSelectedClient();
     if (!selectedClient) {
-      alert('Please select a client');
+      toast({ message: 'Please select a client', variant: 'error' });
       return;
     }
 
     if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
+      toast({ message: 'Please enter a project title', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 
@@ -417,24 +463,27 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       setShowPDFExport(true);
     } catch (error) {
-      alert('Error preparing PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error preparing PDF: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 
   const handlePreview = () => {
     const selectedClient = getSelectedClient();
     if (!selectedClient) {
-      alert('Please select a client');
+      toast({ message: 'Please select a client', variant: 'error' });
       return;
     }
 
     if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
+      toast({ message: 'Please enter a project title', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 
@@ -443,7 +492,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       setShowPDFExport(true);
     } catch (error) {
-      alert('Error preparing preview: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error preparing preview: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 

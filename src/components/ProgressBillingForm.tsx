@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
 import { Calendar, Percent, DollarSign, Plus, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { ProgressBilling } from '../types';
 import { formatCurrency, calculateProgressPhaseAmount } from '../utils/calculations';
@@ -25,16 +26,17 @@ const ProgressBillingForm: React.FC<ProgressBillingFormProps> = ({
     percentage: 0,
     dueDate: ''
   });
+  const toast = useToast();
 
   const addPhase = () => {
     if (!newPhase.phase.trim() || newPhase.percentage <= 0) {
-      alert('Please enter a phase name and percentage');
+      toast({ message: 'Please enter a phase name and percentage', variant: 'error' });
       return;
     }
 
     const totalPercentage = phases.reduce((sum, p) => sum + p.percentage, 0) + newPhase.percentage;
     if (totalPercentage > 100) {
-      alert('Total percentage cannot exceed 100%');
+      toast({ message: 'Total percentage cannot exceed 100%', variant: 'error' });
       return;
     }
 

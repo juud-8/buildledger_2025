@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
 import { FileText, Plus, Search, Edit, Trash2, Eye, Download, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, User, Database, Copy, Printer, Archive } from 'lucide-react';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice, generateNextNumber } from '../utils/storage';
+import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice } from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { formatDate, formatCurrency } from '../utils/calculations';
 import DataManagement from './DataManagement';
 
@@ -19,6 +21,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [convertingQuote, setConvertingQuote] = useState<string | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     loadInvoices();
@@ -76,10 +79,13 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
       const newInvoice = convertQuoteToInvoice(quoteId);
       if (newInvoice) {
         loadInvoices();
-        alert('Quote converted to invoice successfully!');
+        toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
       }
     } catch (error) {
-      alert('Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     } finally {
       setConvertingQuote(null);
     }
@@ -89,7 +95,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     const duplicated: Invoice = {
       ...originalInvoice,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      number: generateNextNumber(originalInvoice.type),
+      number:
+        originalInvoice.type === 'invoice'
+          ? getNextInvoiceNumber(getInvoices())
+          : getNextQuoteNumber(getInvoices()),
       date: new Date(),
       status: 'draft',
       createdAt: new Date(),
@@ -100,7 +109,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
 
     saveInvoice(duplicated);
     loadInvoices();
-    alert(`${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`);
+    toast({
+      message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
+      variant: 'success'
+    });
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {
