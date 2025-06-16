@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './ui/Modal';
+import { useToast } from './ui/Toast';
 import { Wrench, Plus, Search, Edit, Trash2, Calculator, Users, DollarSign, MapPin } from 'lucide-react';
 import { LaborRate } from '../types';
 import { getLaborRates, saveLaborRate, deleteLaborRate } from '../utils/constructionStorage';
@@ -12,6 +14,8 @@ const LaborRateCalculator: React.FC = () => {
   const [skillFilter, setSkillFilter] = useState<string>('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRate, setEditingRate] = useState<LaborRate | null>(null);
+  const [rateToDelete, setRateToDelete] = useState<string | null>(null);
+  const toast = useToast();
   const [calculator, setCalculator] = useState({
     hours: 8,
     selectedRateId: '',
@@ -82,10 +86,16 @@ const LaborRateCalculator: React.FC = () => {
   };
 
   const handleDeleteRate = (rateId: string) => {
-    if (confirm('Are you sure you want to delete this labor rate?')) {
-      deleteLaborRate(rateId);
+    setRateToDelete(rateId);
+  };
+
+  const confirmDeleteRate = () => {
+    if (rateToDelete) {
+      deleteLaborRate(rateToDelete);
       loadLaborRates();
+      toast({ message: 'Labor rate deleted', variant: 'success' });
     }
+    setRateToDelete(null);
   };
 
   const getTradeIcon = (trade: string) => {
@@ -380,6 +390,18 @@ const LaborRateCalculator: React.FC = () => {
           editingRate={editingRate}
           trades={trades}
           skillLevels={skillLevels}
+        />
+      )}
+
+      {rateToDelete && (
+        <Modal
+          isOpen={true}
+          title="Delete Labor Rate"
+          body="Are you sure you want to delete this labor rate?"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDeleteRate}
+          onCancel={() => setRateToDelete(null)}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from './ui/Toast';
 import { CreditCard, Plus, Trash2, Calendar, DollarSign, CheckCircle, Clock } from 'lucide-react';
 import { Payment } from '../types';
 import { formatCurrency, formatDate } from '../utils/calculations';
@@ -24,6 +25,7 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
   onDepositPaidChange
 }) => {
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const toast = useToast();
   const [newPayment, setNewPayment] = useState({
     amount: 0,
     date: new Date().toISOString().split('T')[0],
@@ -34,7 +36,7 @@ const PaymentTracker: React.FC<PaymentTrackerProps> = ({
 
   const addPayment = () => {
     if (newPayment.amount <= 0) {
-      alert('Please enter a valid payment amount');
+      toast({ message: 'Please enter a valid payment amount', variant: 'error' });
       return;
     }
 
