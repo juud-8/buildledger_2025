@@ -6,7 +6,7 @@ import { importData } from './storage';
  */
 export const importFromBlob = async (
   blob: Blob,
-  supabaseClient?: any
+  supabaseClient?: unknown
 ): Promise<boolean> => {
   try {
     const text = await blob.text();

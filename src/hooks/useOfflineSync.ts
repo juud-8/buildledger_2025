@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
-interface OfflineData {
+interface OfflineData<T = unknown> {
   id: string;
   type: 'invoice' | 'client' | 'update';
-  data: any;
+  data: T;
   timestamp: number;
 }
 
@@ -53,8 +53,8 @@ export const useOfflineSync = () => {
     }
   };
 
-  const addToPendingSync = (type: OfflineData['type'], data: any) => {
-    const newItem: OfflineData = {
+  const addToPendingSync = <T,>(type: OfflineData['type'], data: T) => {
+    const newItem: OfflineData<T> = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       type,
       data,
@@ -82,7 +82,7 @@ export const useOfflineSync = () => {
     }
   };
 
-  const saveOfflineData = (type: OfflineData['type'], data: any) => {
+  const saveOfflineData = <T,>(type: OfflineData['type'], data: T) => {
     if (!isOnline) {
       addToPendingSync(type, data);
       return false; // Indicate offline save

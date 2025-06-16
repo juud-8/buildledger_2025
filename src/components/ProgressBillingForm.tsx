@@ -54,7 +54,11 @@ const ProgressBillingForm: React.FC<ProgressBillingFormProps> = ({
     setNewPhase({ phase: '', description: '', percentage: 0, dueDate: '' });
   };
 
-  const updatePhase = (id: string, field: keyof ProgressBilling, value: any) => {
+  const updatePhase = <K extends keyof ProgressBilling>(
+    id: string,
+    field: K,
+    value: ProgressBilling[K]
+  ) => {
     const updatedPhases = phases.map(phase => {
       if (phase.id === id) {
         const updatedPhase = { ...phase, [field]: value };

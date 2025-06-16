@@ -24,8 +24,8 @@ export const getDigitalSignatures = (): DigitalSignature[] => {
   if (!stored) return [];
   
   try {
-    const signatures = JSON.parse(stored);
-    return signatures.map((sig: any) => ({
+    const signatures = JSON.parse(stored) as DigitalSignature[];
+    return signatures.map(sig => ({
       ...sig,
       signatureDate: new Date(sig.signatureDate)
     }));
@@ -58,8 +58,8 @@ export const getLienWaivers = (): LienWaiver[] => {
   if (!stored) return [];
   
   try {
-    const waivers = JSON.parse(stored);
-    return waivers.map((waiver: any) => ({
+    const waivers = JSON.parse(stored) as LienWaiver[];
+    return waivers.map(waiver => ({
       ...waiver,
       throughDate: new Date(waiver.throughDate),
       createdDate: new Date(waiver.createdDate),
@@ -98,12 +98,12 @@ export const getEquipmentRentals = (): EquipmentRental[] => {
   if (!stored) return [];
   
   try {
-    const rentals = JSON.parse(stored);
-    return rentals.map((rental: any) => ({
+    const rentals = JSON.parse(stored) as EquipmentRental[];
+    return rentals.map(rental => ({
       ...rental,
       startDate: new Date(rental.startDate),
       endDate: new Date(rental.endDate),
-      attachments: rental.attachments ? rental.attachments.map((att: any) => ({
+      attachments: rental.attachments ? rental.attachments.map(att => ({
         ...att,
         uploadDate: new Date(att.uploadDate)
       })) : []
@@ -137,20 +137,24 @@ export const getWarranties = (): WarrantyDocument[] => {
   if (!stored) return [];
   
   try {
-    const warranties = JSON.parse(stored);
-    return warranties.map((warranty: any) => ({
+    const warranties = JSON.parse(stored) as WarrantyDocument[];
+    return warranties.map(warranty => ({
       ...warranty,
       warrantyStartDate: new Date(warranty.warrantyStartDate),
       warrantyEndDate: new Date(warranty.warrantyEndDate),
       createdDate: new Date(warranty.createdDate),
-      contractorSignature: warranty.contractorSignature ? {
-        ...warranty.contractorSignature,
-        signatureDate: new Date(warranty.contractorSignature.signatureDate)
-      } : undefined,
-      clientSignature: warranty.clientSignature ? {
-        ...warranty.clientSignature,
-        signatureDate: new Date(warranty.clientSignature.signatureDate)
-      } : undefined
+      contractorSignature: warranty.contractorSignature
+        ? {
+            ...warranty.contractorSignature,
+            signatureDate: new Date(warranty.contractorSignature.signatureDate)
+          }
+        : undefined,
+      clientSignature: warranty.clientSignature
+        ? {
+            ...warranty.clientSignature,
+            signatureDate: new Date(warranty.clientSignature.signatureDate)
+          }
+        : undefined
     }));
   } catch {
     return [];
@@ -183,8 +187,8 @@ export const getDocumentTemplates = (): DocumentTemplate[] => {
   }
   
   try {
-    const templates = JSON.parse(stored);
-    return templates.map((template: any) => ({
+    const templates = JSON.parse(stored) as DocumentTemplate[];
+    return templates.map(template => ({
       ...template,
       createdDate: new Date(template.createdDate),
       lastModified: new Date(template.lastModified)
@@ -218,16 +222,16 @@ export const getChangeOrders = (): ChangeOrder[] => {
   if (!stored) return [];
   
   try {
-    const orders = JSON.parse(stored);
-    return orders.map((order: any) => ({
+    const orders = JSON.parse(stored) as ChangeOrder[];
+    return orders.map(order => ({
       ...order,
       date: new Date(order.date),
       approvedDate: order.approvedDate ? new Date(order.approvedDate) : undefined,
-      attachments: order.attachments ? order.attachments.map((att: any) => ({
+      attachments: order.attachments ? order.attachments.map(att => ({
         ...att,
         uploadDate: new Date(att.uploadDate)
       })) : [],
-      approvalWorkflow: order.approvalWorkflow ? order.approvalWorkflow.map((step: any) => ({
+      approvalWorkflow: order.approvalWorkflow ? order.approvalWorkflow.map(step => ({
         ...step,
         approvedDate: step.approvedDate ? new Date(step.approvedDate) : undefined
       })) : []
@@ -261,8 +265,8 @@ export const getDocumentAttachments = (): DocumentAttachment[] => {
   if (!stored) return [];
   
   try {
-    const attachments = JSON.parse(stored);
-    return attachments.map((att: any) => ({
+    const attachments = JSON.parse(stored) as DocumentAttachment[];
+    return attachments.map(att => ({
       ...att,
       uploadDate: new Date(att.uploadDate)
     }));

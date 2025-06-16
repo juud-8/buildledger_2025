@@ -226,7 +226,7 @@ const BusinessIntelligence: React.FC = () => {
 
   // Export Functions
   const handleExportReport = async (reportType: string) => {
-    let data: any[] = [];
+    let data: Record<string, unknown>[] = [];
     let filename = '';
 
     switch (reportType) {
@@ -293,7 +293,11 @@ const BusinessIntelligence: React.FC = () => {
             
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
+              onChange={(e) =>
+                setSelectedPeriod(
+                  e.target.value as 'monthly' | 'quarterly' | 'yearly'
+                )
+              }
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="monthly">Monthly</option>
@@ -367,7 +371,17 @@ const BusinessIntelligence: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(
+                      tab.id as
+                        | 'overview'
+                        | 'revenue'
+                        | 'clients'
+                        | 'projects'
+                        | 'outstanding'
+                        | 'costs'
+                    )
+                  }
                   className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
                     activeTab === tab.id
                       ? 'border-purple-500 text-purple-600'

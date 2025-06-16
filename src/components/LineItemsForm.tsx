@@ -48,7 +48,11 @@ const LineItemsForm: React.FC<LineItemsFormProps> = ({
     onUpdateLineItems([...lineItems, item]);
   };
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
+  const updateLineItem = <K extends keyof LineItem>(
+    id: string,
+    field: K,
+    value: LineItem[K]
+  ) => {
     const updatedItems = lineItems.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };

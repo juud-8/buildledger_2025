@@ -27,14 +27,16 @@ export const getMaterialDatabase = (): MaterialItem[] => {
   }
   
   try {
-    const materials = JSON.parse(stored);
-    return materials.map((material: any) => ({
+    const materials = JSON.parse(stored) as MaterialItem[];
+    return materials.map(material => ({
       ...material,
       lastUpdated: new Date(material.lastUpdated),
-      priceHistory: material.priceHistory ? material.priceHistory.map((entry: any) => ({
-        ...entry,
-        date: new Date(entry.date)
-      })) : []
+      priceHistory: material.priceHistory
+        ? material.priceHistory.map(entry => ({
+          ...entry,
+          date: new Date(entry.date)
+        })
+        : []
     }));
   } catch {
     return getDefaultMaterials();
@@ -72,8 +74,8 @@ export const getLaborRates = (): LaborRate[] => {
   }
   
   try {
-    const rates = JSON.parse(stored);
-    return rates.map((rate: any) => ({
+    const rates = JSON.parse(stored) as LaborRate[];
+    return rates.map(rate => ({
       ...rate,
       lastUpdated: new Date(rate.lastUpdated)
     }));
@@ -106,13 +108,13 @@ export const getPermits = (): Permit[] => {
   if (!stored) return [];
   
   try {
-    const permits = JSON.parse(stored);
-    return permits.map((permit: any) => ({
+    const permits = JSON.parse(stored) as Permit[];
+    return permits.map(permit => ({
       ...permit,
       applicationDate: new Date(permit.applicationDate),
       approvalDate: permit.approvalDate ? new Date(permit.approvalDate) : undefined,
       expiryDate: permit.expiryDate ? new Date(permit.expiryDate) : undefined,
-      documents: permit.documents ? permit.documents.map((doc: any) => ({
+      documents: permit.documents ? permit.documents.map(doc => ({
         ...doc,
         uploadDate: new Date(doc.uploadDate)
       })) : []
@@ -146,8 +148,8 @@ export const getInspections = (): Inspection[] => {
   if (!stored) return [];
   
   try {
-    const inspections = JSON.parse(stored);
-    return inspections.map((inspection: any) => ({
+    const inspections = JSON.parse(stored) as Inspection[];
+    return inspections.map(inspection => ({
       ...inspection,
       scheduledDate: new Date(inspection.scheduledDate),
       completedDate: inspection.completedDate ? new Date(inspection.completedDate) : undefined
@@ -181,12 +183,12 @@ export const getSubcontractors = (): Subcontractor[] => {
   if (!stored) return [];
   
   try {
-    const subcontractors = JSON.parse(stored);
-    return subcontractors.map((sub: any) => ({
+    const subcontractors = JSON.parse(stored) as Subcontractor[];
+    return subcontractors.map(sub => ({
       ...sub,
       createdAt: new Date(sub.createdAt),
       insuranceExpiry: sub.insuranceExpiry ? new Date(sub.insuranceExpiry) : undefined,
-      rates: sub.rates ? sub.rates.map((rate: any) => ({
+      rates: sub.rates ? sub.rates.map(rate => ({
         ...rate,
         effectiveDate: new Date(rate.effectiveDate)
       })) : []
@@ -220,8 +222,8 @@ export const getProjectMilestones = (): ProjectMilestone[] => {
   if (!stored) return [];
   
   try {
-    const milestones = JSON.parse(stored);
-    return milestones.map((milestone: any) => ({
+    const milestones = JSON.parse(stored) as ProjectMilestone[];
+    return milestones.map(milestone => ({
       ...milestone,
       plannedStartDate: new Date(milestone.plannedStartDate),
       plannedEndDate: new Date(milestone.plannedEndDate),
@@ -257,8 +259,8 @@ export const getWeatherDelays = (): WeatherDelay[] => {
   if (!stored) return [];
   
   try {
-    const delays = JSON.parse(stored);
-    return delays.map((delay: any) => ({
+    const delays = JSON.parse(stored) as WeatherDelay[];
+    return delays.map(delay => ({
       ...delay,
       date: new Date(delay.date)
     }));
