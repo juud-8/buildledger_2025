@@ -22,6 +22,42 @@ export const calculateSubtotal = (lineItems: LineItem[]): number => {
   return Math.round(lineItems.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
 };
 
+import { CategoryTotals } from '../types';
+
+export function getCategoryTotals(items: LineItem[]): CategoryTotals {
+  const totals = items.reduce(
+    (totals, item) => {
+      const markup = item.markup ?? 0;
+      const itemTotal = item.quantity * item.rate * (1 + markup / 100);
+
+      switch (item.category) {
+        case 'material':
+          totals.material += itemTotal;
+          break;
+        case 'labor':
+          totals.labor += itemTotal;
+          break;
+        case 'equipment':
+          totals.equipment += itemTotal;
+          break;
+        default:
+          totals.other += itemTotal;
+          break;
+      }
+
+      return totals;
+    },
+    { material: 0, labor: 0, equipment: 0, other: 0 }
+  );
+
+  return {
+    material: Math.round(totals.material * 100) / 100,
+    labor: Math.round(totals.labor * 100) / 100,
+    equipment: Math.round(totals.equipment * 100) / 100,
+    other: Math.round(totals.other * 100) / 100
+  };
+}
+
 export const calculateCategoryTotals = (lineItems: LineItem[]) => {
   const materialSubtotal = calculateCategorySubtotal(lineItems, 'material');
   const laborSubtotal = calculateCategorySubtotal(lineItems, 'labor');
