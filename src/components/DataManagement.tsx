@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { Download, Upload, Copy, Archive, Search, Filter, Printer, FileText, Database, RefreshCw, Trash2, Calendar, DollarSign, User, Building2 } from 'lucide-react';
 import { Invoice, Client, ContractorInfo } from '../types';
-import { getInvoices, getClients, getContractorInfo, saveInvoice, saveClient, saveContractorInfo, deleteInvoice, deleteClient } from '../utils/storage';
+import {
+  getInvoices,
+  getClients,
+  getContractorInfo,
+  saveInvoice,
+  saveClient,
+  saveContractorInfo,
+  deleteInvoice,
+  deleteClient
+} from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { formatCurrency, formatDate } from '../utils/calculations';
 
 interface DataManagementProps {
@@ -127,7 +137,10 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     const duplicated: Invoice = {
       ...originalInvoice,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      number: generateNextNumber(originalInvoice.type),
+      number:
+        originalInvoice.type === 'invoice'
+          ? getNextInvoiceNumber(getInvoices())
+          : getNextQuoteNumber(getInvoices()),
       date: new Date(),
       status: 'draft',
       createdAt: new Date(),
@@ -140,18 +153,6 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     alert(`${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`);
   };
 
-  const generateNextNumber = (type: 'invoice' | 'quote'): string => {
-    const invoices = getInvoices();
-    const filtered = invoices.filter(i => i.type === type);
-    const numbers = filtered
-      .map(i => parseInt(i.number.replace(/\D/g, ''), 10))
-      .filter(n => !isNaN(n));
-    
-    const nextNumber = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
-    const prefix = type === 'invoice' ? 'INV' : 'QUO';
-    
-    return `${prefix}-${nextNumber.toString().padStart(4, '0')}`;
-  };
 
   // Archive functionality
   const archiveInvoice = (invoice: Invoice) => {
