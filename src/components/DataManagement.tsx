@@ -151,7 +151,7 @@ if (success) {
     setIsSearching(true);
     const invoices = getInvoices();
     
-    let filtered = invoices.filter(invoice => {
+    const filtered = invoices.filter(invoice => {
       // Text search
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
