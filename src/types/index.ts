@@ -123,6 +123,13 @@ export interface TaxBreakdown {
   totalTax: number;
 }
 
+export interface CategoryTotals {
+  material: number;
+  labor: number;
+  equipment: number;
+  other: number;
+}
+
 export interface ProjectPhoto {
   id: string;
   url: string;

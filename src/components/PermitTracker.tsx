@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './ui/Modal';
+import { useToast } from './ui/Toast';
 import { FileText, Plus, Search, Edit, Trash2, Calendar, AlertCircle, CheckCircle, Clock, Upload, Eye } from 'lucide-react';
 import { Permit, Inspection, PermitDocument } from '../types';
 import { getPermits, savePermit, deletePermit, getInspections, saveInspection } from '../utils/constructionStorage';
@@ -14,6 +16,8 @@ const PermitTracker: React.FC = () => {
   const [showAddInspection, setShowAddInspection] = useState(false);
   const [editingPermit, setEditingPermit] = useState<Permit | null>(null);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
+  const [permitToDelete, setPermitToDelete] = useState<string | null>(null);
+  const toast = useToast();
 
   const permitTypes = [
     { value: 'building', label: 'Building Permit', icon: '🏗️' },
@@ -75,10 +79,16 @@ const PermitTracker: React.FC = () => {
   };
 
   const handleDeletePermit = (permitId: string) => {
-    if (confirm('Are you sure you want to delete this permit?')) {
-      deletePermit(permitId);
+    setPermitToDelete(permitId);
+  };
+
+  const confirmDeletePermit = () => {
+    if (permitToDelete) {
+      deletePermit(permitToDelete);
       loadData();
+      toast({ message: 'Permit deleted', variant: 'success' });
     }
+    setPermitToDelete(null);
   };
 
   const handleSaveInspection = (inspection: Inspection) => {
@@ -403,6 +413,18 @@ const PermitTracker: React.FC = () => {
           permit={selectedPermit}
           inspections={inspections.filter(i => i.permitId === selectedPermit.id)}
           onClose={() => setSelectedPermit(null)}
+        />
+      )}
+
+      {permitToDelete && (
+        <Modal
+          isOpen={true}
+          title="Delete Permit"
+          body="Are you sure you want to delete this permit?"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDeletePermit}
+          onCancel={() => setPermitToDelete(null)}
         />
       )}
     </div>
