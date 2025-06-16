@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Search, Edit, Trash2, Eye, Download, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, User, Database, Copy, Printer, Archive } from 'lucide-react';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice, generateNextNumber } from '../utils/storage';
+import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice } from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { formatDate, formatCurrency } from '../utils/calculations';
 import DataManagement from './DataManagement';
 
@@ -89,7 +90,10 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     const duplicated: Invoice = {
       ...originalInvoice,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      number: generateNextNumber(originalInvoice.type),
+      number:
+        originalInvoice.type === 'invoice'
+          ? getNextInvoiceNumber(getInvoices())
+          : getNextQuoteNumber(getInvoices()),
       date: new Date(),
       status: 'draft',
       createdAt: new Date(),

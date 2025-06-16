@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
-import { getClients, getContractorInfo, generateNextNumber, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings } from '../utils/storage';
+import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
+import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency } from '../utils/calculations';
 import { v4 as uuidv4 } from 'uuid';
 import LineItemsForm from './LineItemsForm';
@@ -97,7 +98,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     } else {
       setFormData(prev => ({
         ...prev,
-        number: generateNextNumber(prev.type)
+        number:
+          prev.type === 'invoice'
+            ? getNextInvoiceNumber(getInvoices())
+            : getNextQuoteNumber(getInvoices())
       }));
     }
   }, [editingInvoice]);
@@ -146,7 +150,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setFormData(prev => ({
         ...prev,
         type,
-        number: generateNextNumber(type)
+        number:
+          type === 'invoice'
+            ? getNextInvoiceNumber(getInvoices())
+            : getNextQuoteNumber(getInvoices())
       }));
     }
   };
@@ -334,7 +341,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       if (!editingInvoice) {
         setFormData(prev => ({
           ...prev,
-          number: generateNextNumber(formData.type),
+          number:
+            formData.type === 'invoice'
+              ? getNextInvoiceNumber(getInvoices())
+              : getNextQuoteNumber(getInvoices()),
           clientId: '',
           projectTitle: '',
           projectDescription: '',
