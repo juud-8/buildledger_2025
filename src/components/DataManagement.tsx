@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from './ui/Toast';
 import { Download, Upload, Copy, Archive, Search, Filter, Printer, FileText, Database, RefreshCw, Trash2, Calendar, DollarSign, User, Building2 } from 'lucide-react';
 import { Invoice, Client, ContractorInfo } from '../types';
 import {
@@ -29,6 +30,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
   const [searchResults, setSearchResults] = useState<Invoice[]>([]);
   const [archivedItems, setArchivedItems] = useState<Invoice[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const toast = useToast();
 
   // Export functionality
   const exportData = (type: 'all' | 'invoices' | 'clients' | 'settings') => {
@@ -123,10 +125,10 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
           saveContractorInfo(data.contractorInfo);
         }
 
-        alert('Data imported successfully!');
+        toast({ message: 'Data imported successfully!', variant: 'success' });
         window.location.reload(); // Refresh to show imported data
       } catch (error) {
-        alert('Error importing data. Please check the file format.');
+        toast({ message: 'Error importing data. Please check the file format.', variant: 'error' });
       }
     };
     reader.readAsText(file);
@@ -150,7 +152,10 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     };
 
     saveInvoice(duplicated);
-    alert(`${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`);
+    toast({
+      message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
+      variant: 'success'
+    });
   };
 
 
@@ -159,14 +164,14 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     const archived = { ...invoice, status: 'archived' as const };
     saveInvoice(archived);
     setArchivedItems(prev => [...prev, archived]);
-    alert('Invoice archived successfully!');
+    toast({ message: 'Invoice archived successfully!', variant: 'success' });
   };
 
   const restoreInvoice = (invoice: Invoice) => {
     const restored = { ...invoice, status: 'draft' as const };
     saveInvoice(restored);
     setArchivedItems(prev => prev.filter(item => item.id !== invoice.id));
-    alert('Invoice restored successfully!');
+    toast({ message: 'Invoice restored successfully!', variant: 'success' });
   };
 
   // Advanced search

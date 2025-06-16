@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
 import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
@@ -30,6 +31,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const toast = useToast();
   const [formData, setFormData] = useState<InvoiceFormData>({
     type: 'invoice',
     number: '',
@@ -313,17 +315,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const handleSave = () => {
     const selectedClient = getSelectedClient();
     if (!selectedClient) {
-      alert('Please select a client');
+      toast({ message: 'Please select a client', variant: 'error' });
       return;
     }
 
     if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
+      toast({ message: 'Please enter a project title', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 
@@ -333,7 +335,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       
       const action = editingInvoice ? 'updated' : 'saved';
-      alert(`${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`);
+      toast({
+        message: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`,
+        variant: 'success'
+      });
       
       if (onInvoiceUpdated) {
         onInvoiceUpdated();
@@ -358,7 +363,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
         }));
       }
     } catch (error) {
-      alert('Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 
@@ -371,13 +379,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     try {
       const newInvoice = convertQuoteToInvoice(editingInvoice.id);
       if (newInvoice && onInvoiceUpdated) {
-        alert('Quote converted to invoice successfully!');
+        toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
         onInvoiceUpdated();
         // Load the new invoice for editing
         loadInvoiceForEditing(newInvoice);
       }
     } catch (error) {
-      alert('Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error converting quote: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     } finally {
       setIsConverting(false);
     }
@@ -386,17 +397,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const handleExportPDF = () => {
     const selectedClient = getSelectedClient();
     if (!selectedClient) {
-      alert('Please select a client');
+      toast({ message: 'Please select a client', variant: 'error' });
       return;
     }
 
     if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
+      toast({ message: 'Please enter a project title', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 
@@ -405,24 +416,27 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       setShowPDFExport(true);
     } catch (error) {
-      alert('Error preparing PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error preparing PDF: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 
   const handlePreview = () => {
     const selectedClient = getSelectedClient();
     if (!selectedClient) {
-      alert('Please select a client');
+      toast({ message: 'Please select a client', variant: 'error' });
       return;
     }
 
     if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
+      toast({ message: 'Please enter a project title', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 
@@ -431,7 +445,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
       setCurrentInvoice(invoice);
       setShowPDFExport(true);
     } catch (error) {
-      alert('Error preparing preview: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast({
+        message: 'Error preparing preview: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'error'
+      });
     }
   };
 

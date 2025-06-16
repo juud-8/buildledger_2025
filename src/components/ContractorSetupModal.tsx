@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from './ui/Toast';
 import { Building2, Save, X, Upload, FileText, Shield, CreditCard, Hash } from 'lucide-react';
 import { ContractorInfo } from '../types';
 import { getContractorInfo, saveContractorInfo } from '../utils/storage';
@@ -29,6 +30,7 @@ const ContractorSetupModal: React.FC<ContractorSetupModalProps> = ({ isOpen, onC
   });
 
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const toast = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -60,13 +62,13 @@ const ContractorSetupModal: React.FC<ContractorSetupModalProps> = ({ isOpen, onC
     if (file) {
       // Check file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        alert('Logo file size must be less than 2MB');
+        toast({ message: 'Logo file size must be less than 2MB', variant: 'error' });
         return;
       }
 
       // Check file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast({ message: 'Please select an image file', variant: 'error' });
         return;
       }
 
