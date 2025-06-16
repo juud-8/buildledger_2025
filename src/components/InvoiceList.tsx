@@ -2,8 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from './ui/Toast';
 import { FileText, Plus, Search, Edit, Trash2, Eye, Download, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle, Calendar, DollarSign, User, Database, Copy, Printer, Archive } from 'lucide-react';
 import { Invoice } from '../types';
-import { getInvoices, deleteInvoice, updateInvoiceStatus, convertQuoteToInvoice, updateExpiredQuotes, saveInvoice } from '../utils/storage';
+import {
+  getInvoices,
+  deleteInvoice,
+  updateInvoiceStatus,
+  convertQuoteToInvoice,
+  updateExpiredQuotes,
+  saveInvoice
+} from '../utils/storage';
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+import { useInvoices, useUpdateInvoice } from '../hooks/useInvoices';
+
 import { formatDate, formatCurrency } from '../utils/calculations';
 import DataManagement from './DataManagement';
 
@@ -13,7 +22,8 @@ interface InvoiceListProps {
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew }) => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const { data: invoices = [], refetch } = useInvoices();
+  const updateMutation = useUpdateInvoice();
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'invoice' | 'quote'>('all');
@@ -24,18 +34,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
   const toast = useToast();
 
   useEffect(() => {
-    loadInvoices();
-  }, []);
-
-  useEffect(() => {
     filterInvoices();
   }, [invoices, searchTerm, filterType, filterStatus]);
-
-  const loadInvoices = () => {
-    updateExpiredQuotes(); // Update expired quotes before loading
-    const loadedInvoices = getInvoices().sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    setInvoices(loadedInvoices);
-  };
 
   const filterInvoices = () => {
     let filtered = invoices;
@@ -64,13 +64,15 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
 
   const handleDeleteInvoice = (invoiceId: string) => {
     deleteInvoice(invoiceId);
-    loadInvoices();
+    refetch();
     setDeleteConfirm(null);
   };
 
   const handleStatusChange = (invoiceId: string, status: Invoice['status']) => {
-    updateInvoiceStatus(invoiceId, status);
-    loadInvoices();
+    const inv = invoices.find(i => i.id === invoiceId);
+    if (inv) {
+      updateMutation.mutate({ ...inv, status });
+    }
   };
 
   const handleConvertQuote = async (quoteId: string) => {
@@ -78,8 +80,9 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     try {
       const newInvoice = convertQuoteToInvoice(quoteId);
       if (newInvoice) {
-        loadInvoices();
-        toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
+refetch(); // Supabase-triggered refresh (use if using React Query)
+toast({ message: 'Quote converted to invoice successfully!', variant: 'success' });
+
       }
     } catch (error) {
       toast({
@@ -108,11 +111,12 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
     };
 
     saveInvoice(duplicated);
-    loadInvoices();
-    toast({
-      message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
-      variant: 'success'
-    });
+refetch();
+toast({
+  message: `${originalInvoice.type.charAt(0).toUpperCase() + originalInvoice.type.slice(1)} duplicated successfully!`,
+  variant: 'success'
+});
+
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {

@@ -7,6 +7,7 @@ import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, Refre
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
 import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+import { useCreateInvoice, useUpdateInvoice } from '../hooks/useInvoices';
 import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency, getCategoryTotals } from '../utils/calculations';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -34,6 +35,8 @@ type InvoiceSchema = z.infer<typeof invoiceSchema>;
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpdated }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [contractorInfo, setContractorInfo] = useState<ContractorInfo | null>(null);
+  const createMutation = useCreateInvoice();
+  const updateMutation = useUpdateInvoice();
   const [showClientForm, setShowClientForm] = useState(false);
   const [showContractorForm, setShowContractorForm] = useState(false);
   const [showPDFExport, setShowPDFExport] = useState(false);
@@ -378,37 +381,50 @@ const handleSave = async () => {
 
     try {
       const invoice = createInvoiceObject();
-      saveInvoice(invoice);
-      setCurrentInvoice(invoice);
-      
-      const action = editingInvoice ? 'updated' : 'saved';
-      toast({
-        message: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`,
-        variant: 'success'
-      });
-      
-      if (onInvoiceUpdated) {
-        onInvoiceUpdated();
-      }
-      
-      // Reset form if creating new
-      if (!editingInvoice) {
-        setFormData(prev => ({
-          ...prev,
-          number:
-            formData.type === 'invoice'
-              ? getNextInvoiceNumber(getInvoices())
-              : getNextQuoteNumber(getInvoices()),
-          clientId: '',
-          projectTitle: '',
-          projectDescription: '',
-          projectAddress: '',
-          projectPhotos: [],
-          lineItems: [],
-          discounts: [],
-          notes: ''
-        }));
-      }
+const mutation = editingInvoice ? updateMutation : createMutation;
+
+mutation.mutate(invoice, {
+  onSuccess: () => {
+    setCurrentInvoice(invoice);
+
+    const action = editingInvoice ? 'updated' : 'saved';
+    toast({
+      message: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`,
+      variant: 'success'
+    });
+
+    if (onInvoiceUpdated) {
+      onInvoiceUpdated();
+    }
+
+    if (!editingInvoice) {
+      setFormData(prev => ({
+        ...prev,
+        number:
+          formData.type === 'invoice'
+            ? getNextInvoiceNumber(getInvoices())
+            : getNextQuoteNumber(getInvoices()),
+        clientId: '',
+        projectTitle: '',
+        projectDescription: '',
+        projectAddress: '',
+        projectPhotos: [],
+        lineItems: [],
+        discounts: [],
+        notes: ''
+      }));
+    }
+  },
+  onError: (error: any) => {
+    toast({
+      message:
+        'Error saving invoice: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      variant: 'error'
+    });
+  }
+});
+
     } catch (error) {
       toast({
         message: 'Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'),
