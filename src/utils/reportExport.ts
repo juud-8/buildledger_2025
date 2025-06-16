@@ -1,5 +1,5 @@
 export interface ExportData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const generateReportExport = async (
@@ -74,7 +74,10 @@ const exportToExcel = async (data: ExportData[], filename: string): Promise<void
 };
 
 // Utility functions for formatting data for export
-export const formatDataForExport = (data: any[], type: string): ExportData[] => {
+export const formatDataForExport = (
+  data: Record<string, unknown>[],
+  type: string
+): ExportData[] => {
   switch (type) {
     case 'revenue':
       return data.map(item => ({
@@ -158,11 +161,11 @@ export const formatDataForExport = (data: any[], type: string): ExportData[] => 
 
 // Generate comprehensive business report
 export const generateComprehensiveReport = async (
-  revenueData: any[],
-  clientData: any[],
-  projectData: any[],
-  outstandingData: any[],
-  costData: any[],
+  revenueData: ExportData[],
+  clientData: ExportData[],
+  projectData: ExportData[],
+  outstandingData: ExportData[],
+  costData: ExportData[],
   filename: string = 'comprehensive-business-report'
 ): Promise<void> => {
   const reportData = [

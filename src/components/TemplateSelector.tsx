@@ -130,7 +130,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     setSelectedTemplate(template);
   };
 
-  const handleColorSchemeChange = (colorScheme: any) => {
+  const handleColorSchemeChange = (colorScheme: TemplateSettings['colorScheme']) => {
     setSelectedTemplate(prev => ({
       ...prev,
       colorScheme: {
@@ -142,7 +142,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }));
   };
 
-  const handleSettingChange = (field: keyof TemplateSettings, value: any) => {
+  const handleSettingChange = <K extends keyof TemplateSettings>(
+    field: K,
+    value: TemplateSettings[K]
+  ) => {
     setSelectedTemplate(prev => ({
       ...prev,
       [field]: value

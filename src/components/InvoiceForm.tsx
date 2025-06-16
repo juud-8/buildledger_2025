@@ -28,7 +28,7 @@ interface InvoiceFormProps {
 const invoiceSchema = z.object({
   clientId: z.string().uuid({ message: 'Please select a client' }).nonempty(),
   projectTitle: z.string().min(3, 'Project title must be at least 3 characters'),
-  lineItems: z.array(z.any()).min(1, 'Add at least one line item')
+  lineItems: z.array(z.unknown()).min(1, 'Add at least one line item')
 });
 type InvoiceSchema = z.infer<typeof invoiceSchema>;
 
@@ -234,7 +234,7 @@ const toast = useToast();
     }));
   };
 
-  const handleTemplateChange = (template: any) => {
+  const handleTemplateChange = (template: TemplateSettings) => {
     setFormData(prev => ({ ...prev, templateSettings: template }));
   };
 
@@ -245,7 +245,7 @@ const toast = useToast();
     }));
   };
 
-  const handleDiscountsChange = (discounts: any[]) => {
+  const handleDiscountsChange = (discounts: Discount[]) => {
     setFormData(prev => ({ ...prev, discounts }));
   };
 
@@ -415,7 +415,7 @@ mutation.mutate(invoice, {
       }));
     }
   },
-  onError: (error: any) => {
+  onError: (error: unknown) => {
     toast({
       message:
         'Error saving invoice: ' +

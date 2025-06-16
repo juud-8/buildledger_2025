@@ -70,7 +70,11 @@ const AdvancedCalculationsPanel: React.FC<AdvancedCalculationsPanelProps> = ({
     onDiscountsChange([...discounts, newDiscount]);
   };
 
-  const updateDiscount = (index: number, field: keyof Discount, value: any) => {
+  const updateDiscount = <K extends keyof Discount>(
+    index: number,
+    field: K,
+    value: Discount[K]
+  ) => {
     const updatedDiscounts = discounts.map((discount, i) => 
       i === index ? { ...discount, [field]: value } : discount
     );

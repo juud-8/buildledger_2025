@@ -4,7 +4,7 @@ import { Invoice } from '../types';
 import { getInvoices, getInvoiceById, saveInvoice } from '../utils/storage';
 import { useOfflineSync } from './useOfflineSync';
 
-const parseInvoice = (inv: any): Invoice => ({
+const parseInvoice = (inv: Record<string, unknown>): Invoice => ({
   ...inv,
   date: new Date(inv.date),
   dueDate: inv.dueDate ? new Date(inv.dueDate) : undefined,
@@ -12,18 +12,24 @@ const parseInvoice = (inv: any): Invoice => ({
   createdAt: new Date(inv.createdAt),
   updatedAt: new Date(inv.updatedAt),
   client: { ...inv.client, createdAt: new Date(inv.client.createdAt) },
-  payments: inv.payments ? inv.payments.map((p: any) => ({ ...p, date: new Date(p.date) })) : [],
-  changeOrders: inv.changeOrders ? inv.changeOrders.map((c: any) => ({
-    ...c,
-    date: new Date(c.date),
-    approvedDate: c.approvedDate ? new Date(c.approvedDate) : undefined,
-  })) : [],
-  progressBilling: inv.progressBilling ? inv.progressBilling.map((p: any) => ({
-    ...p,
-    dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
-    billedDate: p.billedDate ? new Date(p.billedDate) : undefined,
-    paidDate: p.paidDate ? new Date(p.paidDate) : undefined,
-  })) : [],
+  payments: Array.isArray((inv as any).payments)
+    ? (inv as any).payments.map((p: any) => ({ ...p, date: new Date(p.date) }))
+    : [],
+  changeOrders: Array.isArray((inv as any).changeOrders)
+    ? (inv as any).changeOrders.map((c: any) => ({
+      ...c,
+      date: new Date(c.date),
+      approvedDate: c.approvedDate ? new Date(c.approvedDate) : undefined,
+    }))
+    : [],
+  progressBilling: Array.isArray((inv as any).progressBilling)
+    ? (inv as any).progressBilling.map((p: any) => ({
+      ...p,
+      dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
+      billedDate: p.billedDate ? new Date(p.billedDate) : undefined,
+      paidDate: p.paidDate ? new Date(p.paidDate) : undefined,
+    }))
+    : [],
 });
 
 const fetchInvoices = async () => {
