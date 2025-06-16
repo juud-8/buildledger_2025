@@ -9,6 +9,8 @@ import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuot
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { useCreateInvoice, useUpdateInvoice } from '../hooks/useInvoices';
 import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency, getCategoryTotals } from '../utils/calculations';
+import type { TemplateSettings, Discount } from '../types'; // adjust path if needed
+
 
 import { v4 as uuidv4 } from 'uuid';
 import LineItemsForm from './LineItemsForm';
@@ -94,7 +96,8 @@ const toast = useToast();
     progressPhases: [],
     templateSettings: getTemplateSettings(),
     terms: '',
-    notes: ''
+    notes: '',
+    attachments: [] // ✅ Add this line
   });
 
   useEffect(() => {
@@ -168,7 +171,8 @@ const toast = useToast();
       progressPhases: invoice.progressBilling || [],
       templateSettings: invoice.templateSettings || getTemplateSettings(),
       terms: invoice.terms || '',
-      notes: invoice.notes || ''
+      notes: invoice.notes || '',
+      attachments: invoice.attachments || [] // ✅ Add this line
     });
     setCurrentInvoice(invoice);
   };

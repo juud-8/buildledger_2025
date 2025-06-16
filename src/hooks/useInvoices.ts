@@ -4,33 +4,25 @@ import { Invoice } from '../types';
 import { getInvoices, getInvoiceById, saveInvoice } from '../utils/storage';
 import { useOfflineSync } from './useOfflineSync';
 
-const parseInvoice = (inv: Record<string, unknown>): Invoice => ({
-  ...inv,
-  date: new Date(inv.date),
-  dueDate: inv.dueDate ? new Date(inv.dueDate) : undefined,
-  expiryDate: inv.expiryDate ? new Date(inv.expiryDate) : undefined,
-  createdAt: new Date(inv.createdAt),
-  updatedAt: new Date(inv.updatedAt),
-  client: { ...inv.client, createdAt: new Date(inv.client.createdAt) },
-  payments: Array.isArray((inv as any).payments)
-    ? (inv as any).payments.map((p: any) => ({ ...p, date: new Date(p.date) }))
-    : [],
-  changeOrders: Array.isArray((inv as any).changeOrders)
-    ? (inv as any).changeOrders.map((c: any) => ({
-      ...c,
-      date: new Date(c.date),
-      approvedDate: c.approvedDate ? new Date(c.approvedDate) : undefined,
-    }))
-    : [],
-  progressBilling: Array.isArray((inv as any).progressBilling)
-    ? (inv as any).progressBilling.map((p: any) => ({
-      ...p,
-      dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
-      billedDate: p.billedDate ? new Date(p.billedDate) : undefined,
-      paidDate: p.paidDate ? new Date(p.paidDate) : undefined,
-    }))
-    : [],
-});
+const parseInvoice = (inv: Record<string, unknown>): Invoice => {
+  const i = inv as any; // casting to allow access to properties
+
+  return {
+    ...i,
+    date: new Date(i.date),
+    dueDate: i.dueDate ? new Date(i.dueDate) : undefined,
+    expiryDate: i.expiryDate ? new Date(i.expiryDate) : undefined,
+    createdAt: new Date(i.createdAt),
+    updatedAt: new Date(i.updatedAt),
+    client: {
+      ...i.client,
+      createdAt: new Date(i.client?.createdAt)
+    },
+    payments: i.payments || [],
+    changeOrders: i.changeOrders || [],
+    progressBilling: i.progressBilling || []
+  };
+};
 
 const fetchInvoices = async () => {
   const { data, error } = await supabase.from('invoices').select('*');

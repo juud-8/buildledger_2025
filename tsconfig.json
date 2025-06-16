@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "module": "ESNext",
-    "jsx": "react-jsx",
-    "esModuleInterop": true,
+    "module": "esnext", // or "es2020"
+    "target": "es2020",
     "moduleResolution": "node",
-    "skipLibCheck": true,
+    "types": ["jest", "node"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
     "strict": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": ["src", "tests", "__tests__"]
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
 }

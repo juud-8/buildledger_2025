@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import InvoiceForm from './InvoiceForm';
 import type { Client, ContractorInfo, Invoice, LineItem, TaxBreakdown } from '../types';
 
+
+
 jest.mock('../utils/storage', () => ({
   getClients: jest.fn(),
   getContractorInfo: jest.fn(),
