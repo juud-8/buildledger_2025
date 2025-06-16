@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from './ui/Toast';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
-import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
+import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto, TemplateSettings, Discount } from '../types';
 import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
 import { useCreateInvoice, useUpdateInvoice } from '../hooks/useInvoices';
@@ -94,7 +94,8 @@ const toast = useToast();
     progressPhases: [],
     templateSettings: getTemplateSettings(),
     terms: '',
-    notes: ''
+    notes: '',
+    attachments: []
   });
 
   useEffect(() => {
@@ -168,7 +169,8 @@ const toast = useToast();
       progressPhases: invoice.progressBilling || [],
       templateSettings: invoice.templateSettings || getTemplateSettings(),
       terms: invoice.terms || '',
-      notes: invoice.notes || ''
+      notes: invoice.notes || '',
+      attachments: invoice.attachments || []
     });
     setCurrentInvoice(invoice);
   };
@@ -338,9 +340,10 @@ const toast = useToast();
       
       // Template settings
       templateSettings: formData.templateSettings,
-      
+
       terms: formData.terms || undefined,
       notes: formData.notes || undefined,
+      attachments: formData.attachments,
       status: editingInvoice?.status || 'draft',
       originalQuoteId: editingInvoice?.originalQuoteId,
       convertedInvoiceId: editingInvoice?.convertedInvoiceId,
@@ -411,7 +414,8 @@ mutation.mutate(invoice, {
         projectPhotos: [],
         lineItems: [],
         discounts: [],
-        notes: ''
+        notes: '',
+        attachments: []
       }));
     }
   },
