@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from './ui/Toast';
 import { Plus, Trash2, FileText, Save, X, AlertCircle } from 'lucide-react';
 import { ChangeOrder, LineItem } from '../types';
 import { calculateSubtotal, calculateTaxBreakdown, formatCurrency } from '../utils/calculations';
@@ -35,6 +36,7 @@ const ChangeOrderForm: React.FC<ChangeOrderFormProps> = ({
     reason: editingChangeOrder?.reason || '',
     lineItems: editingChangeOrder?.lineItems || [] as LineItem[]
   });
+  const toast = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -63,12 +65,12 @@ const ChangeOrderForm: React.FC<ChangeOrderFormProps> = ({
     e.preventDefault();
     
     if (!formData.description.trim()) {
-      alert('Please enter a description for the change order');
+      toast({ message: 'Please enter a description for the change order', variant: 'error' });
       return;
     }
 
     if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+      toast({ message: 'Please add at least one line item', variant: 'error' });
       return;
     }
 

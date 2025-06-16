@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './ui/Modal';
+import { useToast } from './ui/Toast';
 import { Package, Plus, Search, Edit, Trash2, TrendingUp, DollarSign, Calendar, Building2 } from 'lucide-react';
 import { MaterialItem, PriceHistory } from '../types';
 import { getMaterialDatabase, saveMaterialItem, deleteMaterialItem } from '../utils/constructionStorage';
@@ -12,6 +14,8 @@ const MaterialDatabase: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<MaterialItem | null>(null);
   const [showPriceHistory, setShowPriceHistory] = useState<MaterialItem | null>(null);
+  const [materialToDelete, setMaterialToDelete] = useState<string | null>(null);
+  const toast = useToast();
 
   const categories = [
     { value: 'lumber', label: 'Lumber', icon: '🪵' },
@@ -66,10 +70,16 @@ const MaterialDatabase: React.FC = () => {
   };
 
   const handleDeleteMaterial = (materialId: string) => {
-    if (confirm('Are you sure you want to delete this material?')) {
-      deleteMaterialItem(materialId);
+    setMaterialToDelete(materialId);
+  };
+
+  const confirmDeleteMaterial = () => {
+    if (materialToDelete) {
+      deleteMaterialItem(materialToDelete);
       loadMaterials();
+      toast({ message: 'Material deleted', variant: 'success' });
     }
+    setMaterialToDelete(null);
   };
 
   const getCategoryIcon = (category: string) => {
@@ -274,6 +284,18 @@ const MaterialDatabase: React.FC = () => {
         <PriceHistoryModal
           material={showPriceHistory}
           onClose={() => setShowPriceHistory(null)}
+        />
+      )}
+
+      {materialToDelete && (
+        <Modal
+          isOpen={true}
+          title="Delete Material"
+          body="Are you sure you want to delete this material?"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDeleteMaterial}
+          onCancel={() => setMaterialToDelete(null)}
         />
       )}
     </div>
