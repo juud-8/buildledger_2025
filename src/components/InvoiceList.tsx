@@ -15,6 +15,7 @@ import { useInvoices, useUpdateInvoice } from '../hooks/useInvoices';
 
 import { formatDate, formatCurrency } from '../utils/calculations';
 import DataManagement from './DataManagement';
+import AddPaymentModal from './AddPaymentModal';
 
 interface InvoiceListProps {
   onEditInvoice: (invoice: Invoice) => void;
@@ -31,7 +32,14 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ onEditInvoice, onCreateNew })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [convertingQuote, setConvertingQuote] = useState<string | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
-  const toast = useToast();
+const toast = useToast();
+const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+const [paymentModalInvoice, setPaymentModalInvoice] = useState<Invoice | null>(null);
+
+useEffect(() => {
+  loadInvoices();
+}, []);
+
 
   useEffect(() => {
     filterInvoices();
@@ -315,6 +323,14 @@ toast({
            !isQuoteExpired(invoice);
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedInvoice(prev => (prev === id ? null : id));
+  };
+
+  const handlePaymentAdded = () => {
+    loadInvoices();
+  };
+
   const statusOptions: Invoice['status'][] = [
     'draft', 'sent', 'accepted', 'rejected', 'expired', 'converted', 'paid', 'overdue'
   ];
@@ -524,6 +540,16 @@ toast({
                       >
                         <Printer className="h-4 w-4" />
                       </button>
+
+                      {invoice.balanceDue > 0 && (
+                        <button
+                          onClick={() => setPaymentModalInvoice(invoice)}
+                          className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Add Payment"
+                        >
+                          <DollarSign className="h-4 w-4" />
+                        </button>
+                      )}
                       
                       {canConvertQuote(invoice) && (
                         <button
@@ -565,15 +591,50 @@ toast({
                       <span className="text-green-600">Converted to Invoice</span>
                     )}
                   </div>
-                  <div className="text-xs">
-                    {invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}
-                  </div>
+                <div className="text-xs">
+                  {invoice.lineItems.length} item{invoice.lineItems.length !== 1 ? 's' : ''}
                 </div>
               </div>
+
+              {expandedInvoice === invoice.id && (
+                <div className="mt-4 bg-gray-50 border rounded-lg p-4 text-sm space-y-2">
+                  <h4 className="font-medium">Payment History</h4>
+                  {invoice.payments.length === 0 ? (
+                    <p className="text-gray-600">No payments recorded</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {invoice.payments.map(p => (
+                        <li key={p.id} className="flex justify-between">
+                          <span>{formatDate(p.date)}</span>
+                          <span>{formatCurrency(p.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {invoice.balanceDue > 0 && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setPaymentModalInvoice(invoice)}
+                        className="mt-2 px-3 py-1 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                      >
+                        Add Payment
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => toggleExpand(invoice.id)}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                {expandedInvoice === invoice.id ? 'Hide Details' : 'View Details'}
+              </button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
@@ -609,6 +670,15 @@ toast({
             </div>
           </div>
         </div>
+      )}
+
+      {paymentModalInvoice && (
+        <AddPaymentModal
+          invoice={paymentModalInvoice}
+          isOpen={true}
+          onClose={() => setPaymentModalInvoice(null)}
+          onPaymentAdded={handlePaymentAdded}
+        />
       )}
 
       {/* Data Management Modal */}
