@@ -48,7 +48,7 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
   };
 
   const exportData = (type: 'all' | 'invoices' | 'clients' | 'settings') => {
-    let data: any = {};
+    let data: Record<string, unknown> = {};
     let filename = '';
 
     switch (type) {
@@ -351,7 +351,11 @@ if (success) {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(
+                      tab.id as 'export' | 'import' | 'backup' | 'archive' | 'search'
+                    )
+                  }
                   className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'

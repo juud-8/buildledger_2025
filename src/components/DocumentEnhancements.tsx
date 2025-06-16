@@ -86,7 +86,18 @@ const DocumentEnhancements: React.FC<DocumentEnhancementsProps> = ({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(
+                      tab.id as
+                        | 'signatures'
+                        | 'templates'
+                        | 'liens'
+                        | 'change_orders'
+                        | 'photos'
+                        | 'equipment'
+                        | 'warranties'
+                    )
+                  }
                   className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
                     activeTab === tab.id
                       ? `border-blue-500 ${tab.color}`

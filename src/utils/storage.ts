@@ -28,8 +28,8 @@ export const getClients = (): Client[] => {
   if (!stored) return [];
   
   try {
-    const clients = JSON.parse(stored);
-    return clients.map((client: any) => ({
+    const clients = JSON.parse(stored) as Client[];
+    return clients.map(client => ({
       ...client,
       createdAt: new Date(client.createdAt)
     }));
@@ -62,8 +62,8 @@ export const getInvoices = (): Invoice[] => {
   if (!stored) return [];
   
   try {
-    const invoices = JSON.parse(stored);
-    return invoices.map((invoice: any) => ({
+    const invoices = JSON.parse(stored) as Invoice[];
+    return invoices.map(invoice => ({
       ...invoice,
       date: new Date(invoice.date),
       dueDate: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
@@ -74,16 +74,16 @@ export const getInvoices = (): Invoice[] => {
         ...invoice.client,
         createdAt: new Date(invoice.client.createdAt)
       },
-      payments: invoice.payments ? invoice.payments.map((payment: any) => ({
+      payments: invoice.payments ? invoice.payments.map(payment => ({
         ...payment,
         date: new Date(payment.date)
       })) : [],
-      changeOrders: invoice.changeOrders ? invoice.changeOrders.map((co: any) => ({
+      changeOrders: invoice.changeOrders ? invoice.changeOrders.map(co => ({
         ...co,
         date: new Date(co.date),
         approvedDate: co.approvedDate ? new Date(co.approvedDate) : undefined
       })) : [],
-      progressBilling: invoice.progressBilling ? invoice.progressBilling.map((pb: any) => ({
+      progressBilling: invoice.progressBilling ? invoice.progressBilling.map(pb => ({
         ...pb,
         dueDate: pb.dueDate ? new Date(pb.dueDate) : undefined,
         billedDate: pb.billedDate ? new Date(pb.billedDate) : undefined,
@@ -256,10 +256,11 @@ export const exportAllData = () => {
   };
 };
 
-export const importData = (data: any) => {
+export const importData = (data: unknown) => {
   try {
-    if (data.invoices) {
-      data.invoices.forEach((invoice: any) => {
+    const record = data as Record<string, unknown>;
+    if (Array.isArray((record as any).invoices)) {
+      (record as any).invoices.forEach((invoice: any) => {
         const convertedInvoice = {
           ...invoice,
           date: new Date(invoice.date),
@@ -276,8 +277,8 @@ export const importData = (data: any) => {
       });
     }
 
-    if (data.clients) {
-      data.clients.forEach((client: any) => {
+    if (Array.isArray((record as any).clients)) {
+      (record as any).clients.forEach((client: any) => {
         const convertedClient = {
           ...client,
           createdAt: new Date(client.createdAt)
@@ -286,12 +287,12 @@ export const importData = (data: any) => {
       });
     }
 
-    if (data.contractorInfo) {
-      saveContractorInfo(data.contractorInfo);
+    if ((record as any).contractorInfo) {
+      saveContractorInfo((record as any).contractorInfo);
     }
 
-    if (data.templateSettings) {
-      saveTemplateSettings(data.templateSettings);
+    if ((record as any).templateSettings) {
+      saveTemplateSettings((record as any).templateSettings);
     }
 
     return true;
