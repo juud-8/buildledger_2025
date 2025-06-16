@@ -25,7 +25,7 @@ export const getMaterialDatabase = (): MaterialItem[] => {
     // Return default materials if none exist
     return getDefaultMaterials();
   }
-  
+
   try {
     const materials = JSON.parse(stored) as MaterialItem[];
     return materials.map(material => ({
@@ -33,10 +33,10 @@ export const getMaterialDatabase = (): MaterialItem[] => {
       lastUpdated: new Date(material.lastUpdated),
       priceHistory: material.priceHistory
         ? material.priceHistory.map(entry => ({
-          ...entry,
-          date: new Date(entry.date)
-        })
-        : []
+            ...entry,
+            date: new Date(entry.date),
+          }))
+        : [],
     }));
   } catch {
     return getDefaultMaterials();
