@@ -1,4 +1,4 @@
-import { getCategoryTotals } from '../src/utils/calculations.js';
+import { getCategoryTotals } from '../src/utils/calculations';
 import { LineItem } from '../src/types';
 
 const items: LineItem[] = [

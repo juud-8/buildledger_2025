@@ -41,25 +41,26 @@ describe('InvoiceForm', () => {
   };
 
   const mockTemplateSettings = {
-    id: 'modern',
-    name: 'Modern',
-    type: 'modern',
-    colorScheme: {
-      primary: '#000',
-      secondary: '#000',
-      accent: '#000',
-      text: '#000',
-      background: '#fff',
-      border: '#000'
-    },
-    headerStyle: 'standard',
-    footerStyle: 'standard',
-    showLogo: true,
-    showProjectPhotos: false,
-    showDetailedBreakdown: true,
-    fontFamily: 'Arial',
-    fontSize: 'medium'
-  };
+  id: 'modern',
+  name: 'Modern',
+  type: 'modern' as 'modern',
+  colorScheme: {
+    primary: '#000',
+    secondary: '#000',
+    accent: '#000',
+    text: '#000',
+    background: '#fff',
+    border: '#000'
+  },
+  headerStyle: 'standard' as const,
+  footerStyle: 'standard' as const,
+  showLogo: true,
+  showProjectPhotos: false,
+  showDetailedBreakdown: true,
+  fontFamily: 'Arial' as 'Arial',
+  fontSize: 'medium' as 'medium',
+  showDigitalSignature: false // ✅ include this or TypeScript will complain
+};
 
   const lineItem: LineItem = {
     id: 'l1',

@@ -358,3 +358,8 @@ export const searchInvoices = (filters: SearchFilters): Invoice[] => {
     return true;
   });
 };
+
+// ✅ Generate next invoice/quote number wrapper for test mocking
+export const generateNextNumber = (): string => {
+  return getNextInvoiceNumber(getInvoices());
+};
