@@ -12,7 +12,10 @@ import {
   deleteInvoice,
   deleteClient
 } from '../utils/storage';
+import { buildExportBlob } from '../utils/exporter';
+import { importFromBlob } from '../utils/importer';
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
+
 import { formatCurrency, formatDate } from '../utils/calculations';
 
 interface DataManagementProps {
@@ -33,21 +36,28 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
   const toast = useToast();
 
   // Export functionality
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const exportData = (type: 'all' | 'invoices' | 'clients' | 'settings') => {
     let data: any = {};
     let filename = '';
 
     switch (type) {
-      case 'all':
-        data = {
-          invoices: getInvoices(),
-          clients: getClients(),
-          contractorInfo: getContractorInfo(),
-          exportDate: new Date().toISOString(),
-          version: '1.0'
-        };
+      case 'all': {
         filename = `buildledger-complete-backup-${new Date().toISOString().split('T')[0]}.json`;
-        break;
+        const blob = buildExportBlob();
+        downloadBlob(blob, filename);
+        return;
+      }
       case 'invoices':
         data = {
           invoices: getInvoices(),
@@ -72,66 +82,28 @@ const DataManagement: React.FC<DataManagementProps> = ({ onClose }) => {
     }
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, filename);
   };
 
   // Import functionality
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        
-        if (data.invoices) {
-          data.invoices.forEach((invoice: any) => {
-            // Convert date strings back to Date objects
-            const convertedInvoice = {
-              ...invoice,
-              date: new Date(invoice.date),
-              dueDate: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
-              expiryDate: invoice.expiryDate ? new Date(invoice.expiryDate) : undefined,
-              createdAt: new Date(invoice.createdAt),
-              updatedAt: new Date(invoice.updatedAt),
-              client: {
-                ...invoice.client,
-                createdAt: new Date(invoice.client.createdAt)
-              }
-            };
-            saveInvoice(convertedInvoice);
-          });
-        }
+const confirmImport = window.confirm(
+  'Importing data will merge with existing records. Continue?'
+);
+if (!confirmImport) return;
 
-        if (data.clients) {
-          data.clients.forEach((client: any) => {
-            const convertedClient = {
-              ...client,
-              createdAt: new Date(client.createdAt)
-            };
-            saveClient(convertedClient);
-          });
-        }
+const success = await importFromBlob(file);
 
-        if (data.contractorInfo) {
-          saveContractorInfo(data.contractorInfo);
-        }
+if (success) {
+  toast({ message: 'Data imported successfully!', variant: 'success' });
+  window.location.reload();
+} else {
+  toast({ message: 'Error importing data. Please check the file format.', variant: 'error' });
+}
 
-        toast({ message: 'Data imported successfully!', variant: 'success' });
-        window.location.reload(); // Refresh to show imported data
-      } catch (error) {
-        toast({ message: 'Error importing data. Please check the file format.', variant: 'error' });
-      }
-    };
-    reader.readAsText(file);
   };
 
   // Duplicate invoice/quote
