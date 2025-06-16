@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
-import { getClients, getContractorInfo, generateNextNumber, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings } from '../utils/storage';
+import { getClients, getContractorInfo, generateNextNumber, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings } from '../utils/storage';
+import { useCreateInvoice, useUpdateInvoice } from '../hooks/useInvoices';
 import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency } from '../utils/calculations';
 import { v4 as uuidv4 } from 'uuid';
 import LineItemsForm from './LineItemsForm';
@@ -21,6 +22,8 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpdated }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [contractorInfo, setContractorInfo] = useState<ContractorInfo | null>(null);
+  const createMutation = useCreateInvoice();
+  const updateMutation = useUpdateInvoice();
   const [showClientForm, setShowClientForm] = useState(false);
   const [showContractorForm, setShowContractorForm] = useState(false);
   const [showPDFExport, setShowPDFExport] = useState(false);
@@ -320,31 +323,37 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
 
     try {
       const invoice = createInvoiceObject();
-      saveInvoice(invoice);
-      setCurrentInvoice(invoice);
-      
-      const action = editingInvoice ? 'updated' : 'saved';
-      alert(`${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`);
-      
-      if (onInvoiceUpdated) {
-        onInvoiceUpdated();
-      }
-      
-      // Reset form if creating new
-      if (!editingInvoice) {
-        setFormData(prev => ({
-          ...prev,
-          number: generateNextNumber(formData.type),
-          clientId: '',
-          projectTitle: '',
-          projectDescription: '',
-          projectAddress: '',
-          projectPhotos: [],
-          lineItems: [],
-          discounts: [],
-          notes: ''
-        }));
-      }
+      const mutation = editingInvoice ? updateMutation : createMutation;
+      mutation.mutate(invoice, {
+        onSuccess: () => {
+          setCurrentInvoice(invoice);
+
+          const action = editingInvoice ? 'updated' : 'saved';
+          alert(`${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} ${action} successfully!`);
+
+          if (onInvoiceUpdated) {
+            onInvoiceUpdated();
+          }
+
+          if (!editingInvoice) {
+            setFormData(prev => ({
+              ...prev,
+              number: generateNextNumber(formData.type),
+              clientId: '',
+              projectTitle: '',
+              projectDescription: '',
+              projectAddress: '',
+              projectPhotos: [],
+              lineItems: [],
+              discounts: [],
+              notes: ''
+            }));
+          }
+        },
+        onError: (error: any) => {
+          alert('Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        }
+      });
     } catch (error) {
       alert('Error saving invoice: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
