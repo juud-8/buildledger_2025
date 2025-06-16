@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, RefreshCw, Clock, Palette } from 'lucide-react';
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
 import { getClients, getContractorInfo, generateNextNumber, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings } from '../utils/storage';
@@ -18,6 +21,13 @@ interface InvoiceFormProps {
   onInvoiceUpdated?: () => void;
 }
 
+const invoiceSchema = z.object({
+  clientId: z.string().uuid({ message: 'Please select a client' }).nonempty(),
+  projectTitle: z.string().min(3, 'Project title must be at least 3 characters'),
+  lineItems: z.array(z.any()).min(1, 'Add at least one line item')
+});
+type InvoiceSchema = z.infer<typeof invoiceSchema>;
+
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpdated }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [contractorInfo, setContractorInfo] = useState<ContractorInfo | null>(null);
@@ -28,6 +38,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const {
+    register,
+    setValue,
+    trigger,
+    setFocus,
+    formState: { errors }
+  } = useForm<InvoiceSchema>({
+    resolver: zodResolver(invoiceSchema),
+    defaultValues: {
+      clientId: '',
+      projectTitle: '',
+      lineItems: []
+    }
+  });
   const [formData, setFormData] = useState<InvoiceFormData>({
     type: 'invoice',
     number: '',
@@ -64,6 +88,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     terms: '',
     notes: ''
   });
+
+  useEffect(() => {
+    setValue('clientId', formData.clientId);
+    setValue('projectTitle', formData.projectTitle);
+    setValue('lineItems', formData.lineItems);
+  }, [formData.clientId, formData.projectTitle, formData.lineItems, setValue]);
 
   useEffect(() => {
     // Update expired quotes on component mount
@@ -153,6 +183,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
 
   const handleLineItemsUpdate = (lineItems: LineItem[]) => {
     setFormData(prev => ({ ...prev, lineItems }));
+    setValue('lineItems', lineItems);
   };
 
   const handleProjectPhotosUpdate = (photos: ProjectPhoto[]) => {
@@ -161,6 +192,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
 
   const handleClientSelect = (clientId: string) => {
     setFormData(prev => ({ ...prev, clientId }));
+    setValue('clientId', clientId);
   };
 
   const handleAddClient = () => {
@@ -171,6 +203,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   const handleClientSave = (client: Client) => {
     loadClients(); // Reload clients to get the updated list
     setFormData(prev => ({ ...prev, clientId: client.id }));
+    setValue('clientId', client.id);
   };
 
   const handleContractorInfoSave = (info: ContractorInfo) => {
@@ -301,20 +334,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     };
   };
 
-  const handleSave = () => {
-    const selectedClient = getSelectedClient();
-    if (!selectedClient) {
-      alert('Please select a client');
-      return;
-    }
-
-    if (!formData.projectTitle.trim()) {
-      alert('Please enter a project title');
-      return;
-    }
-
-    if (formData.lineItems.length === 0) {
-      alert('Please add at least one line item');
+  const handleSave = async () => {
+    const valid = await trigger();
+    if (!valid) {
+      const firstError = Object.keys(errors)[0] as keyof InvoiceSchema;
+      if (firstError) setFocus(firstError);
       return;
     }
 
@@ -684,6 +708,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
                 onClientSelect={handleClientSelect}
                 onAddClient={handleAddClient}
               />
+              {errors.clientId && (
+                <p className="text-red-600 text-sm mt-1">{errors.clientId.message}</p>
+              )}
             </div>
             
             {getSelectedClient() && (
@@ -720,12 +747,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
                 </label>
                 <input
                   type="text"
+                  {...register('projectTitle', { onChange: handleInputChange })}
                   name="projectTitle"
                   value={formData.projectTitle}
-                  onChange={handleInputChange}
                   placeholder="Kitchen Renovation, Bathroom Remodel, etc."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {errors.projectTitle && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.projectTitle.message}
+                  </p>
+                )}
               </div>
               
               <div>
@@ -767,15 +799,18 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
 
           {/* Line Items */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <LineItemsForm
-              lineItems={formData.lineItems}
-              onUpdateLineItems={handleLineItemsUpdate}
-              materialTaxRate={formData.materialTaxRate}
-              laborTaxRate={formData.laborTaxRate}
-              equipmentTaxRate={formData.equipmentTaxRate}
-              otherTaxRate={formData.otherTaxRate}
-            />
-          </div>
+          <LineItemsForm
+            lineItems={formData.lineItems}
+            onUpdateLineItems={handleLineItemsUpdate}
+            materialTaxRate={formData.materialTaxRate}
+            laborTaxRate={formData.laborTaxRate}
+            equipmentTaxRate={formData.equipmentTaxRate}
+            otherTaxRate={formData.otherTaxRate}
+          />
+          {errors.lineItems && (
+            <p className="text-red-600 text-sm mt-1">{errors.lineItems.message}</p>
+          )}
+        </div>
 
           {/* Advanced Calculations */}
           <AdvancedCalculationsPanel
