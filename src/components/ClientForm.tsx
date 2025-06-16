@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { User, Save, X } from 'lucide-react';
 import { Client } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,33 +13,54 @@ interface ClientFormProps {
   editingClient?: Client | null;
 }
 
+const clientSchema = z.object({
+  name: z.string().nonempty('Name is required'),
+  contactPerson: z.string().optional(),
+  address: z.string().nonempty('Address is required'),
+  city: z.string().nonempty('City is required'),
+  state: z.string().nonempty('State is required'),
+  zipCode: z.string().nonempty('ZIP Code is required'),
+  phone: z.string().nonempty('Phone is required'),
+  email: z.string().email('Invalid email')
+});
+type ClientFormFields = z.infer<typeof clientSchema>;
+
 const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editingClient }) => {
-  const [formData, setFormData] = useState<Omit<Client, 'id' | 'createdAt'>>({
-    name: '',
-    contactPerson: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    phone: '',
-    email: ''
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setFocus,
+    formState: { errors }
+  } = useForm<ClientFormFields>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      name: '',
+      contactPerson: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      phone: '',
+      email: ''
+    }
   });
 
   useEffect(() => {
     if (isOpen) {
       if (editingClient) {
-        setFormData({
+        reset({
           name: editingClient.name,
           contactPerson: editingClient.contactPerson || '',
           address: editingClient.address,
-          city: editingClient.city,  
+          city: editingClient.city,
           state: editingClient.state,
           zipCode: editingClient.zipCode,
           phone: editingClient.phone,
           email: editingClient.email
         });
       } else {
-        setFormData({
+        reset({
           name: '',
           contactPerson: '',
           address: '',
@@ -48,24 +72,22 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
         });
       }
     }
-  }, [isOpen, editingClient]);
+  }, [isOpen, editingClient, reset]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const client: Client = {
-      id: editingClient?.id || uuidv4(),
-      ...formData,
-      createdAt: editingClient?.createdAt || new Date()
-    };
-    
-    onSave(client);
-    onClose();
+  const handleError = () => {
+    const firstError = Object.keys(errors)[0] as keyof ClientFormFields;
+    if (firstError) setFocus(firstError);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const onSubmit = (data: ClientFormFields) => {
+    const client: Client = {
+      id: editingClient?.id || uuidv4(),
+      ...data,
+      createdAt: editingClient?.createdAt || new Date()
+    };
+
+    onSave(client);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -88,7 +110,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit(onSubmit, handleError)} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -96,12 +118,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
+                {...register('name')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.name && (
+                <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>
+              )}
             </div>
             
             <div>
@@ -110,9 +132,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="contactPerson"
-                value={formData.contactPerson}
-                onChange={handleInputChange}
+                {...register('contactPerson')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -123,12 +143,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
+                {...register('address')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.address && (
+                <p className="text-red-600 text-sm mt-1">{errors.address.message}</p>
+              )}
             </div>
             
             <div>
@@ -137,12 +157,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
+                {...register('city')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.city && (
+                <p className="text-red-600 text-sm mt-1">{errors.city.message}</p>
+              )}
             </div>
             
             <div>
@@ -151,12 +171,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleInputChange}
-                required
+                {...register('state')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.state && (
+                <p className="text-red-600 text-sm mt-1">{errors.state.message}</p>
+              )}
             </div>
             
             <div>
@@ -165,12 +185,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="text"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleInputChange}
-                required
+                {...register('zipCode')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.zipCode && (
+                <p className="text-red-600 text-sm mt-1">{errors.zipCode.message}</p>
+              )}
             </div>
             
             <div>
@@ -179,12 +199,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
+                {...register('phone')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.phone && (
+                <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>
+              )}
             </div>
             
             <div>
@@ -193,12 +213,12 @@ const ClientForm: React.FC<ClientFormProps> = ({ isOpen, onClose, onSave, editin
               </label>
               <input
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
+                {...register('email')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {errors.email && (
+                <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
+              )}
             </div>
           </div>
           

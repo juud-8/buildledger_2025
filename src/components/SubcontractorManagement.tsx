@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './ui/Modal';
+import { useToast } from './ui/Toast';
 import { Users, Plus, Search, Edit, Trash2, Star, Phone, Mail, Calendar, Shield, Award, MapPin } from 'lucide-react';
 import { Subcontractor } from '../types';
 import { getSubcontractors, saveSubcontractor, deleteSubcontractor } from '../utils/constructionStorage';
@@ -11,6 +13,8 @@ const SubcontractorManagement: React.FC = () => {
   const [filterTrade, setFilterTrade] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null);
+  const [subcontractorToDelete, setSubcontractorToDelete] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadSubcontractors();
@@ -56,10 +60,16 @@ const SubcontractorManagement: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this subcontractor?')) {
-      deleteSubcontractor(id);
+    setSubcontractorToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (subcontractorToDelete) {
+      deleteSubcontractor(subcontractorToDelete);
       loadSubcontractors();
+      toast({ message: 'Subcontractor deleted', variant: 'success' });
     }
+    setSubcontractorToDelete(null);
   };
 
   const renderStars = (rating: number) => {
@@ -255,6 +265,18 @@ const SubcontractorManagement: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {subcontractorToDelete && (
+        <Modal
+          isOpen={true}
+          title="Delete Subcontractor"
+          body="Are you sure you want to delete this subcontractor?"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={() => setSubcontractorToDelete(null)}
+        />
       )}
     </div>
   );
