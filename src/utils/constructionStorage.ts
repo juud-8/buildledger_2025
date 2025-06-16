@@ -33,9 +33,9 @@ export const getMaterialDatabase = (): MaterialItem[] => {
       lastUpdated: new Date(material.lastUpdated),
       priceHistory: material.priceHistory
         ? material.priceHistory.map(entry => ({
-          ...entry,
-          date: new Date(entry.date)
-        })
+            ...entry,
+            date: new Date(entry.date)
+          }))
         : []
     }));
   } catch {
