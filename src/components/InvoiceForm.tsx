@@ -3,7 +3,8 @@ import { FileText, Calendar, User, Building2, MapPin, Save, Download, Eye, Refre
 import { InvoiceFormData, Client, ContractorInfo, LineItem, Invoice, ProjectPhoto } from '../types';
 import { getClients, getContractorInfo, saveInvoice, getInvoiceById, convertQuoteToInvoice, updateExpiredQuotes, getTemplateSettings, getInvoices } from '../utils/storage';
 import { getNextInvoiceNumber, getNextQuoteNumber } from '../utils/identifier';
-import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency } from '../utils/calculations';
+import { calculateSubtotal, calculateTaxBreakdown, calculateDiscountAmount, calculateBalanceDue, formatCurrency, getCategoryTotals } from '../utils/calculations';
+
 import { v4 as uuidv4 } from 'uuid';
 import LineItemsForm from './LineItemsForm';
 import ClientForm from './ClientForm';
@@ -223,7 +224,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
   };
 
   const calculateTotals = () => {
-    const subtotal = calculateSubtotal(formData.lineItems);
+    const { material, labor, equipment, other } = getCategoryTotals(formData.lineItems);
+    const subtotal = material + labor + equipment + other;
     const taxBreakdown = calculateTaxBreakdown(
       formData.lineItems,
       formData.materialTaxRate,
@@ -235,16 +237,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ editingInvoice, onInvoiceUpda
     const total = subtotal + taxBreakdown.totalTax - discountAmount;
     const balanceDue = calculateBalanceDue(total, []);
     
-    return { 
-      subtotal, 
-      taxBreakdown, 
-      discountAmount, 
-      total, 
+    return {
+      subtotal,
+      taxBreakdown,
+      discountAmount,
+      total,
       balanceDue,
-      materialSubtotal: taxBreakdown.materialTax > 0 ? subtotal * 0.5 : 0, // Simplified calculation
-      laborSubtotal: taxBreakdown.laborTax > 0 ? subtotal * 0.3 : 0,
-      equipmentSubtotal: taxBreakdown.equipmentTax > 0 ? subtotal * 0.15 : 0,
-      otherSubtotal: taxBreakdown.otherTax > 0 ? subtotal * 0.05 : 0
+      materialSubtotal: material,
+      laborSubtotal: labor,
+      equipmentSubtotal: equipment,
+      otherSubtotal: other
     };
   };
 
