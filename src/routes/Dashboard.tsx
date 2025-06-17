@@ -142,6 +142,13 @@ function Dashboard() {
               <Building2 className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">BuildLedger</span>
             </div>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
+            >
+              <LogOut className="h-5 w-5" />
+              Logout
+            </button>
           </div>
           
           <nav className="mt-6 px-3">
@@ -239,14 +246,7 @@ function Dashboard() {
             </div>
           </nav>
           
-          <div className="absolute bottom-6 left-6 right-6 space-y-3">
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
-            >
-              <LogOut className="h-5 w-5" />
-              Logout
-            </button>
+          <div className="absolute bottom-6 left-6 right-6">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm font-medium text-blue-900">Professional Construction Suite</p>
               <p className="text-xs text-blue-700 mt-1">Complete invoicing, project management, and document suite for construction professionals</p>
