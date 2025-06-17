@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, FileText, Users, Settings, Package, Wrench, Calendar, UserCheck, BarChart3, Cloud, TrendingUp, FileCheck } from 'lucide-react';
+import { Building2, FileText, Users, Settings, Package, Wrench, Calendar, UserCheck, BarChart3, Cloud, TrendingUp, FileCheck, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { handleLogout } from '../utils/auth';
 import InvoiceForm from '../components/InvoiceForm';
 import InvoiceList from '../components/InvoiceList';
 import ClientManagement from '../components/ClientManagement';
@@ -20,6 +22,7 @@ type Page = 'invoices' | 'invoice-list' | 'clients' | 'materials' | 'labor' | 'p
 function Dashboard() {
   const [currentPage, setCurrentPage] = useState<Page>('invoices');
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const navigate = useNavigate();
 
   // Register service worker for offline functionality
   useEffect(() => {
@@ -44,6 +47,10 @@ function Dashboard() {
   const handleCreateNew = () => {
     setEditingInvoice(null);
     setCurrentPage('invoices');
+  };
+
+  const onLogout = async () => {
+    await handleLogout(navigate);
   };
 
   const handleInvoiceUpdated = () => {
@@ -232,7 +239,14 @@ function Dashboard() {
             </div>
           </nav>
           
-          <div className="absolute bottom-6 left-6 right-6">
+          <div className="absolute bottom-6 left-6 right-6 space-y-3">
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
+            >
+              <LogOut className="h-5 w-5" />
+              Logout
+            </button>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm font-medium text-blue-900">Professional Construction Suite</p>
               <p className="text-xs text-blue-700 mt-1">Complete invoicing, project management, and document suite for construction professionals</p>
