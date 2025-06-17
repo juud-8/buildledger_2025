@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { FileText, Users, Settings, Plus, Menu, X, Home, Search, TrendingUp, Package, FileCheck } from 'lucide-react';
+import { FileText, Users, Settings, Plus, Menu, X, Home, Search, TrendingUp, Package, FileCheck, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { handleLogout } from '../utils/auth';
 
 interface MobileNavigationProps {
   currentPage: string;
@@ -13,6 +15,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   onCreateNew
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navigation = [
     { id: 'invoices', name: 'Create', icon: Plus, color: 'text-blue-600' },
@@ -38,6 +41,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   const handleNavigation = (pageId: string) => {
     onPageChange(pageId);
+    setIsMenuOpen(false);
+  };
+
+  const onLogout = async () => {
+    await handleLogout(navigate);
     setIsMenuOpen(false);
   };
 
@@ -198,7 +206,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
               </div>
             </div>
             
-            <div className="absolute bottom-4 left-4 right-4">
+            <div className="absolute bottom-4 left-4 right-4 space-y-2">
               <button
                 onClick={() => {
                   onCreateNew();
@@ -208,6 +216,13 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
               >
                 <Plus className="h-5 w-5" />
                 Create New Document
+              </button>
+              <button
+                onClick={onLogout}
+                className="w-full bg-red-600 text-white p-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                Logout
               </button>
             </div>
           </div>
