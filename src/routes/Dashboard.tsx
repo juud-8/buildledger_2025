@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, FileText, Users, Settings, Package, Wrench, Calendar, UserCheck, BarChart3, Cloud, TrendingUp, FileCheck } from 'lucide-react';
+import { Building2, FileText, Users, Settings, Package, Wrench, Calendar, UserCheck, BarChart3, Cloud, TrendingUp, FileCheck, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { handleLogout } from '../utils/auth';
 import InvoiceForm from '../components/InvoiceForm';
 import InvoiceList from '../components/InvoiceList';
 import ClientManagement from '../components/ClientManagement';
@@ -20,6 +22,7 @@ type Page = 'invoices' | 'invoice-list' | 'clients' | 'materials' | 'labor' | 'p
 function Dashboard() {
   const [currentPage, setCurrentPage] = useState<Page>('invoices');
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const navigate = useNavigate();
 
   // Register service worker for offline functionality
   useEffect(() => {
@@ -44,6 +47,10 @@ function Dashboard() {
   const handleCreateNew = () => {
     setEditingInvoice(null);
     setCurrentPage('invoices');
+  };
+
+  const onLogout = async () => {
+    await handleLogout(navigate);
   };
 
   const handleInvoiceUpdated = () => {
@@ -135,6 +142,13 @@ function Dashboard() {
               <Building2 className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">BuildLedger</span>
             </div>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
+            >
+              <LogOut className="h-5 w-5" />
+              Logout
+            </button>
           </div>
           
           <nav className="mt-6 px-3">
