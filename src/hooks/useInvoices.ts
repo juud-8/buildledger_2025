@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import supabase from '../lib/supabaseClient';
+import supabase from '../../lib/supabase';
 import { Invoice } from '../types';
 import { getInvoices, getInvoiceById, saveInvoice } from '../utils/storage';
 import { useOfflineSync } from './useOfflineSync';

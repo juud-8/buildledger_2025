@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import supabase from '../utils/supabase';
+import supabase from '../lib/supabase';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
